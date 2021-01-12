@@ -12,13 +12,13 @@ module.exports = (req, res, next) => {
   } else {
   
     const basic = req.headers.authorization.split(' ').pop(); 
-    console.log('BASIC : ', basic);
+    // console.log('BASIC : ', basic);
     const [user, pass] = base64.decode(basic).split(':'); 
     console.log('__BASIC_AUTH__', user, pass);
     users
       .authenticateBasic(user, pass)
       .then((validUser) => {
-        console.log('req.TOKEN :', req.token);
+        // console.log('req.TOKEN :', req.token);
         req.token = users.generateToken(validUser);
         req.user = validUser;
 
