@@ -1,60 +1,58 @@
 'use strict';
-
+require('dotenv').config();
 const superagent = require('superagent');
-const users = require('../models/user-model');
-// 2. Users are redirected back to your site by GitHub
-// POST https://github.com/login/oauth/access_token
-const tokenUrl = 'https://github.com/login/oauth/access_token';
-const userUrl = 'https://api.github.com/user';
-// add it in .env
+const users = require('../models/user-model.js');
+const tokenServerUrl = 'https://github.com/login/oauth/access_token';
+const remoteAPI = 'https://api.github.com/user';
 const CLIENT_ID = process.env.CLIENT_ID;
-// add it in .env
-const SECRET_ID = process.env.SECRET_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const API_SERVER = process.env.API_SERVER;
 
-module.exports = async function(req, res, next) {
-    // 1. get the code from the query 
-    let code = req.query.code; // form code
-    console.log('(1) CODE ====== ', code);
-    // 2. get token 
-    let remoteToken = await exchangeCodeWithToken(code);
-    console.log('(2) remoteToken =====> ', remoteToken);
-    // 3. get user object by the token
-    let remoteUser = await getRemoteUserInfo(remoteToken);
-    console.log("(3) remoteUser.login-----> ", remoteUser.login);
+module.exports = async (req, res, next) => {
+  try {
+    const code = req.query.code;
 
-    let [localUser, localToken] = await getUser(remoteUser); 
-    console.log("(4) localUser -----> ", localUser, " localToken ===> ", localToken);
-    req.user = localUser;
-    req.token = localToken;
+    const remoteToken = await exchangeCodeForToken(code);
+    console.log('remote Token ->' , remoteToken)
+    const remoteUser = await getRemoteUserInfo(remoteToken);
+    console.log('remote user ->' , remoteUser)
+    const [user, token] = await getUser(remoteUser);
+    req.user = user;
+    req.token = token;
     next();
-}
+  } catch (err) {
+    next(err);
+  }
+};
 
-async function exchangeCodeWithToken(code) {
-    // tokenUrl
-    let tokenResponse = await superagent.post(tokenUrl).send({
-        code : code, 
-        client_id: CLIENT_ID,
-        client_secret : SECRET_ID,
-        redirect_uri: API_SERVER
-    });
-    return tokenResponse.body.access_token;
+async function exchangeCodeForToken(code) {
+  const tokenResponse = await superagent.post(tokenServerUrl).send({
+    code: code,
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    redirect_uri: API_SERVER,
+    grant_type: 'authorization_code', 
+  });
+  const access_token = tokenResponse.body.access_token;
+  return access_token;
 }
 
 async function getRemoteUserInfo(token) {
-    let userResponse = await superagent.get(userUrl)
-        .set('Authorization', `token ${token}`)
-        .set('user-agent', 'oAuth-App');
-    let user = userResponse.body;
-    return user;
+  const userResponse = await superagent
+    .get(remoteAPI)
+    .set('Authorization', `token ${token}`)
+    .set('user-agent', 'oAuth-App');
+  const user = userResponse.body;
+  return user;
 }
 
-async function getUser(userObj) {
-    let userRecord = {
-        username: userObj.login,
-        password: 'ouathpass'
-    };
-    let user = await users.save(userRecord);
-    let token = await users.generateToken(user);
-    return [user, token];
+async function getUser(remoteUser) {
+  const userRecord = {
+    username: remoteUser.login,
+    password: 'anything', 
+  };
+  const user = await users.save(userRecord);
+  
+  const token = users.generateToken(user);
+  return [user, token];
 }

@@ -27,6 +27,7 @@
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.11.11",
     "morgan": "^1.10.0",
+    "path": "^0.12.7",
     "superagent": "^6.1.0",
     "supertest": "^6.0.1"
   }

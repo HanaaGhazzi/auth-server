@@ -7,7 +7,6 @@ const cors = require('cors');
 const router = require('./auth/router.js');
 const middleNotFound = require('./middleware/404.js');
 const middleError = require('./middleware/500.js');
-
 const app = express();
 
 
@@ -19,7 +18,6 @@ app.use('/public', express.static('public'));
 
 //Routers use
 app.use(router);
-
 
 // errors middleware
 app.use('*', middleNotFound);

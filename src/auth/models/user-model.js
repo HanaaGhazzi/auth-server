@@ -13,8 +13,8 @@ class Users extends Model {
     }
 
     async save(record) {
+        console.log('myData--->', record)
         let data = await this.get({ username: record.username });
-        console.log('myData', record)
         
         if (data.length === 0) {
             record.password = await bcrypt.hash(record.password, 5);
